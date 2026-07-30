@@ -1,0 +1,16 @@
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Environment variables (database password etc.)
+.env
+
+# Alembic cache
+alembic/__pycache__/
+
+# IDE files
+.vscode/
+.idea/
