@@ -1,6 +1,7 @@
+from datetime import datetime
+
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from database import Base
-from datetime import datetime
 
 
 class ActivityHistory(Base):
@@ -20,9 +21,13 @@ class ActivityHistory(Base):
         nullable=True
     )
 
-    Activity = Column(String(255), nullable=False)
+    Activity = Column(
+        String(255),
+        nullable=False
+    )
 
     ActivityDate = Column(
         DateTime,
-        default=datetime.utcnow
+        default=datetime.utcnow,
+        nullable=False
     )

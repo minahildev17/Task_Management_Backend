@@ -1,4 +1,14 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey
+from datetime import datetime
+
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Date,
+    DateTime,
+    ForeignKey,
+)
+
 from database import Base
 
 
@@ -20,6 +30,31 @@ class Project(Base):
     )
 
     Name = Column(String(100), nullable=False)
-    Description = Column(String(255))
-    StartDate = Column(Date)
-    EndDate = Column(Date)
+
+    Description = Column(
+        String(255),
+        nullable=True
+    )
+
+    Status = Column(
+        String(50),
+        nullable=False,
+        default="Active"
+    )
+
+    StartDate = Column(Date, nullable=True)
+
+    EndDate = Column(Date, nullable=True)
+
+    CreatedAt = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    UpdatedAt = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )

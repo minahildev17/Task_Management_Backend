@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey
+from datetime import datetime
+
+from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey
 from database import Base
 
 
@@ -26,7 +28,38 @@ class Task(Base):
     )
 
     Title = Column(String(100), nullable=False)
-    Description = Column(String(255))
-    Status = Column(String(50), nullable=False)
-    Priority = Column(String(50), nullable=False)
-    DueDate = Column(Date)
+
+    Description = Column(
+        String(255),
+        nullable=True
+    )
+
+    Status = Column(
+        String(50),
+        nullable=False,
+        default="Pending"
+    )
+
+    Priority = Column(
+        String(50),
+        nullable=False,
+        default="Medium"
+    )
+
+    DueDate = Column(
+        Date,
+        nullable=True
+    )
+
+    CreatedAt = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    UpdatedAt = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )

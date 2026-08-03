@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, ForeignKey
+from datetime import datetime
+from sqlalchemy import Column, Integer, ForeignKey, DateTime
 from database import Base
 
 
@@ -22,5 +23,18 @@ class OrganizationMember(Base):
     RoleID = Column(
         Integer,
         ForeignKey("roles.RoleID"),
+        nullable=False
+    )
+
+    CreatedAt = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    UpdatedAt = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
         nullable=False
     )

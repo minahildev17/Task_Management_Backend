@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from datetime import datetime
+
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from database import Base
 
 
@@ -19,4 +21,20 @@ class Comment(Base):
         nullable=False
     )
 
-    CommentText = Column(String(500), nullable=False)
+    CommentText = Column(
+        String(500),
+        nullable=False
+    )
+
+    CreatedAt = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    UpdatedAt = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )

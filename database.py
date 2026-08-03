@@ -37,3 +37,11 @@ SessionLocal = sessionmaker(
 
 # Base class for all ORM models
 Base = declarative_base()
+
+# Dependency for FastAPI database sessions
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
