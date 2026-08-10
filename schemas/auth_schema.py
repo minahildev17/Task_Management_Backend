@@ -12,6 +12,13 @@ class LoginRequest(BaseModel):
     Password: str
 
 
-class AuthResponse(BaseModel):
+class SignupResponse(BaseModel):
     message: str
     user_id: int
+
+
+class LoginResponse(BaseModel):
+    message: str
+    user_id: int
+    access_token: str
+    token_type: str

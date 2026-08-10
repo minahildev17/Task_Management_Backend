@@ -1,12 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+
 from database import get_db
-from models.user import User
+
 from schemas.auth_schema import (
     SignupRequest,
     LoginRequest,
-    AuthResponse
+    SignupResponse,
+    LoginResponse
+)
+
+
+from services.auth_service import (
+    get_user_by_email,
+    create_user,
+    login_user
 )
 
 
@@ -16,16 +25,21 @@ router = APIRouter(
 )
 
 
-# Signup
-@router.post("/signup", response_model=AuthResponse)
+
+@router.post(
+    "/signup",
+    response_model=SignupResponse
+)
 def signup(
     user_data: SignupRequest,
     db: Session = Depends(get_db)
 ):
 
-    existing_user = db.query(User).filter(
-        User.Email == user_data.Email
-    ).first()
+    existing_user = get_user_by_email(
+        db,
+        user_data.Email
+    )
+
 
     if existing_user:
         raise HTTPException(
@@ -33,15 +47,14 @@ def signup(
             detail="Email already registered"
         )
 
-    new_user = User(
-        Name=user_data.Name,
-        Email=user_data.Email,
-        Password=user_data.Password
+
+    new_user = create_user(
+        db=db,
+        name=user_data.Name,
+        email=user_data.Email,
+        password=user_data.Password
     )
 
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
 
     return {
         "message": "User signup successful",
@@ -49,25 +62,29 @@ def signup(
     }
 
 
-# Login
-@router.post("/login", response_model=AuthResponse)
+
+
+@router.post(
+    "/login",
+    response_model=LoginResponse
+)
 def login(
     login_data: LoginRequest,
     db: Session = Depends(get_db)
 ):
 
-    user = db.query(User).filter(
-        User.Email == login_data.Email,
-        User.Password == login_data.Password
-    ).first()
+    result = login_user(
+        db=db,
+        email=login_data.Email,
+        password=login_data.Password
+    )
 
-    if not user:
+
+    if not result:
         raise HTTPException(
             status_code=401,
             detail="Invalid email or password"
         )
 
-    return {
-        "message": "Login successful",
-        "user_id": user.UserID
-    }
+
+    return result
