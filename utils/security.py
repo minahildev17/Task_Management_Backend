@@ -8,31 +8,53 @@ from jose import jwt, JWTError
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
+from sqlalchemy.orm import Session
 
-# Load environment variables
+from database import get_db
+from models.user import User
+from models.role import Role
+
+
+# --------------------------------------------------
+# LOAD ENVIRONMENT VARIABLES
+# --------------------------------------------------
+
 load_dotenv()
 
-
-# JWT settings
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY is not set in .env file")
 
+
+# --------------------------------------------------
+# JWT SETTINGS
+# --------------------------------------------------
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
-# Password hashing
+# --------------------------------------------------
+# PASSWORD HASHING
+# --------------------------------------------------
+
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto"
 )
 
 
-# JWT Bearer authentication
+# --------------------------------------------------
+# JWT BEARER AUTHENTICATION
+# --------------------------------------------------
+
 bearer_scheme = HTTPBearer()
 
+
+# --------------------------------------------------
+# PASSWORD FUNCTIONS
+# --------------------------------------------------
 
 def hash_password(password: str):
     return pwd_context.hash(password)
@@ -47,6 +69,10 @@ def verify_password(
         hashed_password
     )
 
+
+# --------------------------------------------------
+# CREATE ACCESS TOKEN
+# --------------------------------------------------
 
 def create_access_token(data: dict):
 
@@ -66,6 +92,10 @@ def create_access_token(data: dict):
         algorithm=ALGORITHM
     )
 
+
+# --------------------------------------------------
+# GET CURRENT USER
+# --------------------------------------------------
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(
@@ -99,3 +129,41 @@ def get_current_user(
             status_code=401,
             detail="Invalid token"
         )
+
+
+# --------------------------------------------------
+# SYSTEM ADMIN AUTHORIZATION
+# --------------------------------------------------
+
+def require_system_admin(
+    user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+
+    user = db.query(User).filter(
+        User.UserID == int(user_id)
+    ).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    system_admin_role = db.query(Role).filter(
+        Role.RoleName == "System Admin"
+    ).first()
+
+    if not system_admin_role:
+        raise HTTPException(
+            status_code=500,
+            detail="System Admin role not found"
+        )
+
+    if user.RoleID != system_admin_role.RoleID:
+        raise HTTPException(
+            status_code=403,
+            detail="System Admin access required"
+        )
+
+    return system_admin_role.RoleID

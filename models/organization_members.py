@@ -1,12 +1,18 @@
 from datetime import datetime
+
 from sqlalchemy import Column, Integer, ForeignKey, DateTime
+
 from database import Base
 
 
 class OrganizationMember(Base):
     __tablename__ = "organization_members"
 
-    OrganizationMemberID = Column(Integer, primary_key=True, index=True)
+    OrganizationMemberID = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     OrganizationID = Column(
         Integer,

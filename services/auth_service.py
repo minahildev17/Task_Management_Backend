@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 
 from models.user import User
+from models.role import Role
+
 from utils.security import (
     hash_password,
     verify_password,
@@ -14,14 +16,30 @@ def get_user_by_email(db: Session, email: str):
     ).first()
 
 
-def create_user(db: Session, name: str, email: str, password: str):
+def get_role_by_name(db: Session, role_name: str):
+    return db.query(Role).filter(
+        Role.RoleName == role_name
+    ).first()
 
+
+def create_user(
+    db: Session,
+    name: str,
+    email: str,
+    password: str
+):
     hashed_password = hash_password(password)
+
+    member_role = get_role_by_name(
+        db,
+        "Member"
+    )
 
     new_user = User(
         Name=name,
         Email=email,
-        Password=hashed_password
+        Password=hashed_password,
+        RoleID=member_role.RoleID if member_role else None
     )
 
     db.add(new_user)
@@ -31,31 +49,33 @@ def create_user(db: Session, name: str, email: str, password: str):
     return new_user
 
 
-def authenticate_user(db: Session, email: str, password: str):
-
-    user = get_user_by_email(db, email)
+def authenticate_user(
+    db: Session,
+    email: str,
+    password: str
+):
+    user = get_user_by_email(
+        db,
+        email
+    )
 
     if not user:
         return None
 
-    # -------- TEMPORARY DEBUG --------
-    print("=" * 50)
-    print("Email:", email)
-    print("Entered Password:", password)
-    print("Entered Password Length:", len(password))
-    print("Stored Password:", user.Password)
-    print("Stored Password Length:", len(user.Password))
-    print("=" * 50)
-    # -------------------------------
-
-    if not verify_password(password, user.Password):
+    if not verify_password(
+        password,
+        user.Password
+    ):
         return None
 
     return user
 
 
-def login_user(db: Session, email: str, password: str):
-
+def login_user(
+    db: Session,
+    email: str,
+    password: str
+):
     user = authenticate_user(
         db=db,
         email=email,
@@ -67,7 +87,8 @@ def login_user(db: Session, email: str, password: str):
 
     access_token = create_access_token(
         data={
-            "sub": str(user.UserID)
+            "sub": str(user.UserID),
+            "role_id": user.RoleID
         }
     )
 
