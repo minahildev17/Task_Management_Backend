@@ -9,3 +9,4 @@ from .task import Task
 from .comment import Comment
 from .attachment import Attachment
 from .activity_history import ActivityHistory
+from .theme import Theme

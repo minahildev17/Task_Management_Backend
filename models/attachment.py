@@ -7,7 +7,11 @@ from database import Base
 class Attachment(Base):
     __tablename__ = "attachments"
 
-    AttachmentID = Column(Integer, primary_key=True, index=True)
+    AttachmentID = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     TaskID = Column(
         Integer,
@@ -26,8 +30,14 @@ class Attachment(Base):
         nullable=False
     )
 
-    FilePath = Column(
-        String(500),
+    FileType = Column(
+        String(100),
+        nullable=False
+    )
+
+    # AWS S3 image URL will be stored here
+    FileURL = Column(
+        String(1000),
         nullable=False
     )
 

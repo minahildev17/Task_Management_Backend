@@ -1,21 +1,13 @@
 from datetime import datetime
-from enum import Enum
 
 from pydantic import BaseModel, ConfigDict
-
-
-class ThemeEnum(str, Enum):
-    LIGHT = "light"
-    DARK = "dark"
-    BLUE = "blue"
-    GREEN = "green"
 
 
 class OrganizationBase(BaseModel):
     Name: str
     Email: str
     ContactNo: str
-    Theme: ThemeEnum = ThemeEnum.LIGHT
+    ThemeID: int
 
 
 class OrganizationCreate(OrganizationBase):
@@ -28,7 +20,7 @@ class OrganizationResponse(BaseModel):
     Email: str
     ContactNo: str
     LogoURL: str | None = None
-    Theme: ThemeEnum
+    ThemeID: int
     CreatedAt: datetime
     UpdatedAt: datetime
 

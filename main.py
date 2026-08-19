@@ -1,6 +1,4 @@
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-import os
 
 from database import engine
 
@@ -8,6 +6,9 @@ from routers import auth
 from routers import organization
 from routers import organization_member
 from routers import user
+from routers import project
+from routers import task
+from routers import attachment
 
 
 app = FastAPI(
@@ -17,24 +18,28 @@ app = FastAPI(
 )
 
 
-# Create uploads folder automatically
-os.makedirs("uploads", exist_ok=True)
+# --------------------------------------------------
+# EXISTING ROUTERS
+# --------------------------------------------------
 
-
-# Serve uploaded files
-app.mount(
-    "/uploads",
-    StaticFiles(directory="uploads"),
-    name="uploads"
-)
-
-
-# Include routers
 app.include_router(auth.router)
 app.include_router(organization.router)
 app.include_router(organization_member.router)
 app.include_router(user.router)
 
+
+# --------------------------------------------------
+# PROJECT / TICKET / ATTACHMENT ROUTERS
+# --------------------------------------------------
+
+app.include_router(project.router)
+app.include_router(task.router)
+app.include_router(attachment.router)
+
+
+# --------------------------------------------------
+# ROOT
+# --------------------------------------------------
 
 @app.get("/")
 def root():

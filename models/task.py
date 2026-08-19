@@ -1,13 +1,26 @@
 from datetime import datetime
+from enum import Enum
 
-from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey, Enum as SQLEnum
 from database import Base
+
+
+class TaskStatus(str, Enum):
+    READY_TO_DO = "Ready to Do"
+    IN_PROGRESS = "In Progress"
+    BLOCKED = "Blocked"
+    TESTING = "Testing"
+    DONE = "Done"
 
 
 class Task(Base):
     __tablename__ = "tasks"
 
-    TaskID = Column(Integer, primary_key=True, index=True)
+    TaskID = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     ProjectID = Column(
         Integer,
@@ -15,10 +28,11 @@ class Task(Base):
         nullable=False
     )
 
+    # Ticket baad mein kisi user ko assign kiya ja sakta hai
     AssignedTo = Column(
         Integer,
         ForeignKey("users.UserID"),
-        nullable=False
+        nullable=True
     )
 
     CreatedBy = Column(
@@ -27,7 +41,10 @@ class Task(Base):
         nullable=False
     )
 
-    Title = Column(String(100), nullable=False)
+    Title = Column(
+        String(100),
+        nullable=False
+    )
 
     Description = Column(
         String(255),
@@ -35,9 +52,9 @@ class Task(Base):
     )
 
     Status = Column(
-        String(50),
+        SQLEnum(TaskStatus),
         nullable=False,
-        default="Pending"
+        default=TaskStatus.READY_TO_DO
     )
 
     Priority = Column(

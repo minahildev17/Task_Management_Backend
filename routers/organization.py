@@ -14,10 +14,14 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models.organization import Organization, ThemeEnum
+
+from models.organization import Organization
 from models.organization_members import OrganizationMember
 from models.role import Role
+from models.theme import Theme
+
 from schemas.organization_schema import OrganizationResponse
+
 from utils.security import get_current_user
 
 
@@ -38,6 +42,7 @@ router = APIRouter(
 def get_organizations(
     db: Session = Depends(get_db)
 ):
+
     return db.query(Organization).all()
 
 
@@ -80,7 +85,7 @@ def create_organization(
     Name: str = Form(...),
     Email: str = Form(...),
     ContactNo: str = Form(...),
-    Theme: ThemeEnum = Form(...),
+    ThemeID: int = Form(...),
     Logo: UploadFile | None = File(None),
     db: Session = Depends(get_db),
     current_user: str = Depends(get_current_user)
@@ -88,7 +93,10 @@ def create_organization(
 
     user_id = int(current_user)
 
-    # Check organization email
+    # --------------------------------------------------
+    # CHECK ORGANIZATION EMAIL
+    # --------------------------------------------------
+
     existing = db.query(Organization).filter(
         Organization.Email == Email
     ).first()
@@ -99,7 +107,24 @@ def create_organization(
             detail="Organization email already exists"
         )
 
-    # Check Owner role
+    # --------------------------------------------------
+    # CHECK THEME
+    # --------------------------------------------------
+
+    theme = db.query(Theme).filter(
+        Theme.ThemeID == ThemeID
+    ).first()
+
+    if not theme:
+        raise HTTPException(
+            status_code=404,
+            detail="Theme not found"
+        )
+
+    # --------------------------------------------------
+    # CHECK OWNER ROLE
+    # --------------------------------------------------
+
     owner_role = db.query(Role).filter(
         Role.RoleName == "Owner"
     ).first()
@@ -110,41 +135,65 @@ def create_organization(
             detail="Owner role not found"
         )
 
-    # Save logo
+    # --------------------------------------------------
+    # SAVE LOGO
+    # --------------------------------------------------
+
     logo_path = None
 
     if Logo:
 
-        extension = Logo.filename.split(".")[-1]
+        os.makedirs(
+            "uploads",
+            exist_ok=True
+        )
 
-        filename = f"{uuid.uuid4()}.{extension}"
+        extension = ""
+
+        if Logo.filename and "." in Logo.filename:
+            extension = Logo.filename.split(".")[-1]
+
+        if extension:
+            filename = f"{uuid.uuid4()}.{extension}"
+        else:
+            filename = str(uuid.uuid4())
 
         logo_path = os.path.join(
             "uploads",
             filename
         )
 
-        with open(logo_path, "wb") as buffer:
+        with open(
+            logo_path,
+            "wb"
+        ) as buffer:
+
             shutil.copyfileobj(
                 Logo.file,
                 buffer
             )
 
-    # Create organization
+    # --------------------------------------------------
+    # CREATE ORGANIZATION
+    # --------------------------------------------------
+
     organization = Organization(
         Name=Name,
         Email=Email,
         ContactNo=ContactNo,
         LogoURL=logo_path,
-        Theme=Theme
+        ThemeID=ThemeID
     )
 
     db.add(organization)
 
-    # Get OrganizationID before creating membership
+    # Get OrganizationID
     db.flush()
 
-    # Creator becomes Owner
+    # --------------------------------------------------
+    # CREATOR BECOMES OWNER
+    # --------------------------------------------------
+
     organization_member = OrganizationMember(
         OrganizationID=organization.OrganizationID,
         UserID=user_id,
@@ -161,7 +210,7 @@ def create_organization(
 
 # --------------------------------------------------
 # UPDATE ORGANIZATION
-# Only OWNER can update
+# ONLY OWNER CAN UPDATE
 # --------------------------------------------------
 
 @router.put(
@@ -173,13 +222,17 @@ def update_organization(
     Name: str = Form(...),
     Email: str = Form(...),
     ContactNo: str = Form(...),
-    Theme: ThemeEnum = Form(...),
+    ThemeID: int = Form(...),
     Logo: UploadFile | None = File(None),
     db: Session = Depends(get_db),
     current_user: str = Depends(get_current_user)
 ):
 
     user_id = int(current_user)
+
+    # --------------------------------------------------
+    # CHECK ORGANIZATION
+    # --------------------------------------------------
 
     organization = db.query(Organization).filter(
         Organization.OrganizationID == organization_id
@@ -191,7 +244,10 @@ def update_organization(
             detail="Organization not found"
         )
 
-    # Check current user is Owner
+    # --------------------------------------------------
+    # CHECK OWNER ROLE
+    # --------------------------------------------------
+
     owner_role = db.query(Role).filter(
         Role.RoleName == "Owner"
     ).first()
@@ -201,6 +257,10 @@ def update_organization(
             status_code=500,
             detail="Owner role not found"
         )
+
+    # --------------------------------------------------
+    # CHECK CURRENT USER IS OWNER
+    # --------------------------------------------------
 
     membership = db.query(OrganizationMember).filter(
         OrganizationMember.OrganizationID == organization_id,
@@ -214,31 +274,83 @@ def update_organization(
             detail="Only the organization owner can update the organization"
         )
 
-    # Update organization
+    # --------------------------------------------------
+    # CHECK THEME
+    # --------------------------------------------------
+
+    theme = db.query(Theme).filter(
+        Theme.ThemeID == ThemeID
+    ).first()
+
+    if not theme:
+        raise HTTPException(
+            status_code=404,
+            detail="Theme not found"
+        )
+
+    # --------------------------------------------------
+    # CHECK EMAIL
+    # --------------------------------------------------
+
+    existing_email = db.query(Organization).filter(
+        Organization.Email == Email,
+        Organization.OrganizationID != organization_id
+    ).first()
+
+    if existing_email:
+        raise HTTPException(
+            status_code=400,
+            detail="Organization email already exists"
+        )
+
+    # --------------------------------------------------
+    # UPDATE ORGANIZATION
+    # --------------------------------------------------
+
     organization.Name = Name
     organization.Email = Email
     organization.ContactNo = ContactNo
-    organization.Theme = Theme
+    organization.ThemeID = ThemeID
 
-    # Update logo
+    # --------------------------------------------------
+    # UPDATE LOGO
+    # --------------------------------------------------
+
     if Logo:
 
         if (
             organization.LogoURL
             and os.path.exists(organization.LogoURL)
         ):
-            os.remove(organization.LogoURL)
+            os.remove(
+                organization.LogoURL
+            )
 
-        extension = Logo.filename.split(".")[-1]
+        os.makedirs(
+            "uploads",
+            exist_ok=True
+        )
 
-        filename = f"{uuid.uuid4()}.{extension}"
+        extension = ""
+
+        if Logo.filename and "." in Logo.filename:
+            extension = Logo.filename.split(".")[-1]
+
+        if extension:
+            filename = f"{uuid.uuid4()}.{extension}"
+        else:
+            filename = str(uuid.uuid4())
 
         logo_path = os.path.join(
             "uploads",
             filename
         )
 
-        with open(logo_path, "wb") as buffer:
+        with open(
+            logo_path,
+            "wb"
+        ) as buffer:
+
             shutil.copyfileobj(
                 Logo.file,
                 buffer
@@ -254,10 +366,12 @@ def update_organization(
 
 # --------------------------------------------------
 # DELETE ORGANIZATION
-# Only OWNER can delete
+# ONLY OWNER CAN DELETE
 # --------------------------------------------------
 
-@router.delete("/{organization_id}")
+@router.delete(
+    "/{organization_id}"
+)
 def delete_organization(
     organization_id: int,
     db: Session = Depends(get_db),
@@ -265,6 +379,10 @@ def delete_organization(
 ):
 
     user_id = int(current_user)
+
+    # --------------------------------------------------
+    # CHECK ORGANIZATION
+    # --------------------------------------------------
 
     organization = db.query(Organization).filter(
         Organization.OrganizationID == organization_id
@@ -276,7 +394,10 @@ def delete_organization(
             detail="Organization not found"
         )
 
-    # Check current user is Owner
+    # --------------------------------------------------
+    # CHECK OWNER ROLE
+    # --------------------------------------------------
+
     owner_role = db.query(Role).filter(
         Role.RoleName == "Owner"
     ).first()
@@ -286,6 +407,10 @@ def delete_organization(
             status_code=500,
             detail="Owner role not found"
         )
+
+    # --------------------------------------------------
+    # CHECK CURRENT USER IS OWNER
+    # --------------------------------------------------
 
     membership = db.query(OrganizationMember).filter(
         OrganizationMember.OrganizationID == organization_id,
@@ -299,12 +424,21 @@ def delete_organization(
             detail="Only the organization owner can delete the organization"
         )
 
-    # Delete logo
+    # --------------------------------------------------
+    # DELETE LOGO
+    # --------------------------------------------------
+
     if (
         organization.LogoURL
         and os.path.exists(organization.LogoURL)
     ):
-        os.remove(organization.LogoURL)
+        os.remove(
+            organization.LogoURL
+        )
+
+    # --------------------------------------------------
+    # DELETE ORGANIZATION
+    # --------------------------------------------------
 
     db.delete(organization)
     db.commit()

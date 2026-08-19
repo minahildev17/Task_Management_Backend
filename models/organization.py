@@ -1,21 +1,17 @@
 from datetime import datetime
-import enum
 
-from sqlalchemy import Column, Integer, String, DateTime, Enum
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from database import Base
-
-
-class ThemeEnum(str, enum.Enum):
-    LIGHT = "light"
-    DARK = "dark"
-    BLUE = "blue"
-    GREEN = "green"
 
 
 class Organization(Base):
     __tablename__ = "organizations"
 
-    OrganizationID = Column(Integer, primary_key=True, index=True)
+    OrganizationID = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     Name = Column(
         String(100),
@@ -39,11 +35,12 @@ class Organization(Base):
         nullable=True
     )
 
-    Theme = Column(
-    Enum(ThemeEnum, name="theme_enum"),
-    default=ThemeEnum.LIGHT,
-    nullable=False
-)
+    # Theme table ki Foreign Key
+    ThemeID = Column(
+        Integer,
+        ForeignKey("themes.ThemeID"),
+        nullable=False
+    )
 
     CreatedAt = Column(
         DateTime,

@@ -1,64 +1,112 @@
 # Task Management Backend
 
-A backend system for managing users, organizations, projects, tasks, and related activities.
-Built using **FastAPI, SQLAlchemy, MySQL, Alembic, JWT Authentication, and Cloudflare Tunnel**.
+A backend system for managing users, organizations, projects, tickets, ticket assignments, attachments, and activity-related data.
+
+Built using **FastAPI, SQLAlchemy, MySQL, Alembic, JWT Authentication, MinIO, and Cloudflare Tunnel**.
+
+---
 
 ## 🚀 Technologies Used
 
 * Python
 * FastAPI
-* SQLAlchemy
+* SQLAlchemy ORM
 * MySQL
 * Alembic
-* JWT Authentication
 * Pydantic
 * PyMySQL
-* Cloudflare Tunnel
+* JWT Authentication
+* Password Hashing
+* MinIO
+* Python Multipart
 * Swagger / OpenAPI
+* Cloudflare Tunnel
+
+---
 
 ## 📌 Project Features
+
+### Authentication
 
 * User Signup
 * User Login
 * JWT Authentication
 * Password Hashing
-* Organization Creation
-* Organization Update
-* Organization Deletion
+* Protected API endpoints
+
+### Organization Management
+
+* Create Organization
+* Update Organization
+* Delete Organization
 * Organization Logo
 * Organization Theme
 * Assign Users to Organizations
-* MySQL Database Integration
-* Alembic Database Migrations
-* Swagger API Documentation
-* Cloudflare Tunnel Public Hosting
 
-## 🌐 Live API
+### Project Management
 
-**Cloudflare Public URL:**
-https://compared-instances-but-inclusive.trycloudflare.com
+* Create Project
+* Update Project
+* Delete Project
+* Project members support
 
-**Swagger API Documentation:**
-https://compared-instances-but-inclusive.trycloudflare.com/docs
+### Ticket Management
 
-## 📚 API Documentation
+* Create Ticket
+* Update Ticket
+* Delete Ticket
+* Assign Tickets to Users
+* Ticket Status Workflow
 
-The project provides interactive Swagger documentation through FastAPI.
+### Ticket Status Workflow
 
-Use the Swagger URL above to:
+The ticket status workflow contains the following statuses:
 
-* Register a user
-* Login
-* Get JWT access token
-* Test authenticated endpoints
-* Create organizations
-* Update organizations
-* Delete organizations
-* Assign users to organizations
+```text
+Ready to Do
+     ↓
+In Progress
+     ↓
+Testing
+     ↓
+Done
+```
+
+The workflow also supports blocked and return transitions:
+
+```text
+Ready to Do → In Progress
+Ready to Do → Blocked
+
+In Progress → Ready to Do
+In Progress → Blocked
+In Progress → Testing
+
+Blocked → In Progress
+
+Testing → Done
+Testing → In Progress
+
+Done → In Progress
+```
+
+Existing `Pending` task values were migrated to `Ready to Do`.
+
+### File Attachments
+
+* Ticket image/file attachments
+* MinIO object storage integration
+* `task-attachments` MinIO bucket
+* Database stores the file URL/path instead of Base64 image data
+* Attachment API support
+
+---
 
 ## 🗄️ Database
 
-The project uses **MySQL** with the following database configuration:
+The project uses **MySQL**.
+
+Example database configuration:
 
 ```env
 DB_HOST=localhost
@@ -70,63 +118,291 @@ DB_PASSWORD=your_password
 
 > Do not upload the actual `.env` file or database password to GitHub.
 
-## 🔐 Authentication
+---
 
-Authentication is implemented using **JWT (JSON Web Tokens)**.
+## 📦 MinIO Storage
 
-Passwords are securely hashed before being stored in the database.
+MinIO is used for storing ticket attachments and images.
 
-After login, the API returns an access token that can be used to access protected endpoints.
+### Local MinIO Configuration
 
-## 🛠️ Run Locally
+```env
+MINIO_ENDPOINT=localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=your_minio_password
+MINIO_BUCKET=task-attachments
+```
 
-Install dependencies:
+### MinIO Services
+
+```text
+MinIO API:
+http://127.0.0.1:9000
+
+MinIO Console:
+http://127.0.0.1:9001
+```
+
+The project uses the following bucket:
+
+```text
+task-attachments
+```
+
+> The actual MinIO password must only be stored in the local `.env` file and must never be committed to GitHub.
+
+---
+
+## 🔄 Database Migrations
+
+Alembic is used to manage database schema changes.
+
+Run the latest migrations with:
+
+```bash
+alembic upgrade head
+```
+
+Create a new migration when required:
+
+```bash
+alembic revision --autogenerate -m "migration message"
+```
+
+---
+
+## 🚀 Run Locally
+
+### 1. Create and activate virtual environment
+
+Windows PowerShell:
+
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+```
+
+### 2. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Start the FastAPI server:
+### 3. Configure environment variables
 
-```bash
-uvicorn app.main:app --reload
+Create a `.env` file in the project root.
+
+Example:
+
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=task_management_db
+DB_USER=root
+DB_PASSWORD=your_password
+
+MINIO_ENDPOINT=localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=your_minio_password
+MINIO_BUCKET=task-attachments
 ```
 
-Open Swagger:
+### 4. Run database migrations
+
+```bash
+alembic upgrade head
+```
+
+### 5. Start FastAPI server
+
+```bash
+uvicorn main:app --reload
+```
+
+The local server will be available at:
+
+```text
+http://127.0.0.1:8000
+```
+
+---
+
+## 📖 Swagger / OpenAPI
+
+FastAPI automatically provides Swagger documentation.
+
+Open:
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
-## ☁️ Cloudflare Tunnel
+Swagger can be used to test:
 
-To make the local FastAPI server publicly accessible:
+* Authentication APIs
+* Organization APIs
+* Project APIs
+* Ticket APIs
+* Ticket assignment
+* Attachment upload
+* Other available backend endpoints
+
+---
+
+## 🌐 Cloudflare Tunnel
+
+Cloudflare Tunnel can be used to expose the local FastAPI server publicly.
+
+Run:
 
 ```bash
 cloudflared tunnel --url http://localhost:8000
 ```
 
-Cloudflare generates a public `trycloudflare.com` URL.
+Cloudflare will generate a public `trycloudflare.com` URL.
 
-## 📂 Main Project Components
+The public URL can be used to access the FastAPI application and Swagger documentation.
 
-* `app/main.py` — FastAPI application
-* `app/models/` — SQLAlchemy database models
-* `app/schemas/` — Pydantic schemas
-* `app/routers/` — API routes
-* `app/services/` — Business logic and authentication services
-* `app/utils/` — Security utilities
-* `alembic/` — Database migrations
-* `.env` — Environment variables
+---
 
-## ⚠️ Security
+## 📂 Main Project Structure
 
-The `.env` file contains sensitive database credentials and must not be committed to GitHub.
+```text
+Task Management Backend/
+│
+├── alembic/
+│   └── versions/
+│       └── Database migration files
+│
+├── models/
+│   ├── organization.py
+│   ├── user.py
+│   ├── role.py
+│   ├── permissions.py
+│   ├── organization_members.py
+│   ├── project.py
+│   ├── project_members.py
+│   ├── task.py
+│   ├── comment.py
+│   ├── attachment.py
+│   └── theme.py
+│
+├── routers/
+│   ├── auth.py
+│   ├── organization.py
+│   ├── organization_member.py
+│   ├── user.py
+│   ├── project.py
+│   ├── task.py
+│   └── attachment.py
+│
+├── schemas/
+│   ├── organization_schema.py
+│   ├── project_schema.py
+│   ├── task_schema.py
+│   └── attachment_schema.py
+│
+├── services/
+│   ├── auth_service.py
+│   └── minio_service.py
+│
+├── utils/
+│   ├── security.py
+│   └── s3.py
+│
+├── main.py
+├── requirements.txt
+├── test_minio.py
+├── .env
+└── README.md
+```
 
-Make sure `.env` is included in `.gitignore`.
+---
 
-## 👩‍💻 Project Status
+## 🔐 Security
 
-**Completed**
+Sensitive configuration is stored in `.env`.
 
-The backend API, database integration, authentication, organization management, Swagger documentation, and Cloudflare public hosting have been implemented.
+The following files and directories should not be committed:
+
+```text
+.env
+venv/
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+```
+
+The `.env` file is included in `.gitignore`.
+
+Never commit:
+
+* Database passwords
+* MinIO passwords
+* JWT secret keys
+* Other private credentials
+
+---
+
+## 🧪 Testing
+
+The backend APIs can be tested using Swagger.
+
+Testing includes:
+
+* User Signup
+* User Login
+* JWT Authentication
+* Organization Create / Update / Delete
+* User Organization Assignment
+* Project Create / Update / Delete
+* Ticket Create / Update / Delete
+* Ticket Assignment
+* Ticket Status Workflow
+* Ticket Attachment Upload
+* MinIO connectivity
+* Database records and migration verification
+
+MinIO connectivity can also be checked using the project's MinIO test script.
+
+---
+
+## 📊 Project Status
+
+### Completed
+
+* Database design
+* SQLAlchemy models
+* Alembic migrations
+* MySQL integration
+* FastAPI server
+* JWT authentication
+* User Signup
+* User Login
+* Organization CRUD
+* Organization Logo support
+* Organization Theme support
+* Organization Member assignment
+* Project CRUD
+* Ticket CRUD
+* Ticket assignment
+* Ticket status workflow
+* MinIO configuration
+* MinIO bucket setup
+* Attachment model and API integration
+
+### In Progress
+
+* Final MinIO image upload debugging
+* End-to-end attachment upload verification
+* Final API testing
+* Final database verification
+
+---
+
+## 👩‍💻 Project
+
+**Task Management Backend**
+
+Backend API developed using FastAPI with MySQL database, SQLAlchemy ORM, Alembic migrations, JWT authentication, and MinIO object storage.
