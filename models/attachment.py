@@ -35,7 +35,7 @@ class Attachment(Base):
         nullable=False
     )
 
-    # AWS S3 image URL will be stored here
+
     FileURL = Column(
         String(1000),
         nullable=False

@@ -6,6 +6,7 @@ from minio import Minio
 from minio.error import S3Error
 from fastapi import HTTPException
 
+
 load_dotenv()
 
 
@@ -57,11 +58,13 @@ def upload_file_to_minio(
             content_type=content_type
         )
 
-    except S3Error:
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to upload image to MinIO"
-        )
+    except S3Error as e:
+        print("MINIO ERROR:", e)
+        raise
+
+    except Exception as e:
+        print("MINIO GENERAL ERROR:", e)
+        raise
 
     file_url = (
         f"http://{MINIO_ENDPOINT}/{MINIO_BUCKET}/{unique_file_name}"
